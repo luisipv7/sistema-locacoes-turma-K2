@@ -1,0 +1,7 @@
+fastapi[standard]
+pydantic
+python-dotenv
+sqlmodel
+pyjwt           
+python-multipart 
+PyMySQL
