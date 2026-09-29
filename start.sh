@@ -73,7 +73,7 @@ for attempt in range(30):
             charset='utf8mb4', autocommit=True, connect_timeout=2,
             client_flag=CLIENT.MULTI_STATEMENTS,
         )
-        break
+        break 
     except pymysql.OperationalError as exc:
         if exc.args[0] not in (2002, 2003) or attempt == 29:
             raise SystemExit(
