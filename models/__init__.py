@@ -1,4 +1,4 @@
 from models.user import User
 from models.base import TimestampMixin
-
-__all__ = ["User", "TimestampMixin"]
+from models.item import Item
+__all__ = ["User", "TimestampMixin", "Item"]
