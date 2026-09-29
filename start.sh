@@ -49,4 +49,44 @@ else
   exit 1
 fi
 
+echo 'Aguardando o MySQL e importando db01.sql...'
+python - <<'PY'
+import os
+import time
+from pathlib import Path
+
+import pymysql
+from dotenv import load_dotenv
+from pymysql.constants import CLIENT
+from sqlalchemy.engine import make_url
+
+load_dotenv(Path('.env'))
+url = make_url(os.environ['DATABASE_URL'])
+if url.get_backend_name() != 'mysql' or url.database != 'rent-all':
+    raise SystemExit('Configure DATABASE_URL para o banco MySQL rent-all no .env.')
+
+for attempt in range(30):
+    try:
+        connection = pymysql.connect(
+            host=url.host or 'localhost', port=url.port or 3306,
+            user=url.username or 'root', password=url.password or '',
+            charset='utf8mb4', autocommit=True, connect_timeout=2,
+            client_flag=CLIENT.MULTI_STATEMENTS,
+        )
+        break
+    except pymysql.OperationalError as exc:
+        if exc.args[0] not in (2002, 2003) or attempt == 29:
+            raise SystemExit(
+                f'MySQL indisponível (erro {exc.args[0]}). Verifique o XAMPP e DATABASE_URL.'
+            ) from None
+        time.sleep(1)
+
+with connection:
+    with connection.cursor() as cursor:
+        cursor.execute(Path('db01.sql').read_text(encoding='utf-8-sig'))
+        while cursor.nextset():
+            pass
+print('Banco rent-all configurado.')
+PY
+
 exec fastapi dev main.py
