@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from controller.auth import get_current_user, login, read_me
-from models.auth import User
+from models.user import User
 from schemas.auth import Token, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])

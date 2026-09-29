@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 
-from models.auth import User
+from models.user import User
 from security import verify_password
 
 
