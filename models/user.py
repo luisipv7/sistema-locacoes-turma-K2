@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import Column, Enum as SAEnum, UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from models.base import TimestampMixin
@@ -26,13 +26,24 @@ class User(TimestampMixin, SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
 
-    tenant_id: int = Field(default=None, index=True)
+    tenant_id: int | None = Field(default=None, index=True)
     # tenant_id: int = Field(foreign_key="tenants.id", index=True)
 
     username: str = Field(index=True, max_length=50, unique=True)
     hashed_password: str = Field(max_length=255)
 
-    role: UserRole = Field(default=UserRole.CLIENTE)
+    role: UserRole = Field(
+        default=UserRole.CLIENTE,
+        sa_column=Column(
+            SAEnum(
+                UserRole,
+                values_callable=lambda roles: [role.value for role in roles],
+                native_enum=False,
+                length=30,
+            ),
+            nullable=False,
+        ),
+    )
     is_active: bool = Field(default=True)
 
     # tenant: "Tenant" = Relationship(back_populates="users")
