@@ -1,6 +1,4 @@
 
-from __future__ import annotations
-
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -10,25 +8,25 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.base import TimestampMixin
 from models.enums import ItemStatus
 
-# if TYPE_CHECKING:
-#     from app.models.booking import Booking
-#     from app.models.category import Category
-#     from app.models.tenant import Tenant
-#     from app.models.user import User
+if TYPE_CHECKING:
+    from models.booking import Booking
+    from models.category import Category
+    from models.tenant import Tenant
+    from models.user import User
 
 
 class Item(TimestampMixin, SQLModel, table=True):
     __tablename__ = "items"
 
-    # __table_args__ = (
-    #     UniqueConstraint("tenant_id", "slug", name="uq_items_tenant_slug"),
-    # )
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_items_tenant_slug"),
+    )
 
     id: int | None = Field(default=None, primary_key=True)
 
-    tenant_id: int = Field(default=None, index=True)
-    category_id: int = Field(default=None, index=True)
-    owner_id: int = Field(default=None, index=True)
+    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    category_id: int | None = Field(default=None, foreign_key="categories.id", index=True)
+    owner_id: int | None = Field(default=None, foreign_key="users.id", index=True)
 
     name: str = Field(max_length=150)
     slug: str = Field(index=True, max_length=150)
@@ -48,7 +46,7 @@ class Item(TimestampMixin, SQLModel, table=True):
     status: ItemStatus = Field(default=ItemStatus.AVAILABLE, index=True)
     is_active: bool = Field(default=True)
 
-    # tenant: "Tenant" = Relationship(back_populates="items")
-    # category: "Category" = Relationship(back_populates="items")
-    # owner: "User" = Relationship(back_populates="items")
-    # bookings: list["Booking"] = Relationship(back_populates="item")
+    tenant: "Tenant" = Relationship(back_populates="items")
+    category: "Category" = Relationship(back_populates="items")
+    owner: "User" = Relationship(back_populates="items")
+    bookings: list["Booking"] = Relationship(back_populates="item")
