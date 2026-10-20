@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from database import create_db_and_tables
-from routes import auth_router
+from routes import auth_router, health_check, category
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Template INFO8B API")
@@ -21,3 +21,5 @@ def on_startup():
 
 
 app.include_router(auth_router)
+app.include_router(health_check)
+app.include_router(category)

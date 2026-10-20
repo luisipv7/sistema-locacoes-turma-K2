@@ -5,5 +5,4 @@ from models.tenant import Tenant
 from models.category import Category
 from models.booking import Booking
 
-
 __all__ = ["User", "TimestampMixin", "Item", "Category", "Tenant", "Booking"]
