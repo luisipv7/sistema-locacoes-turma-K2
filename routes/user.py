@@ -1,0 +1,14 @@
+from fastapi import APIRouter, Depends
+from sqlmodel import Session
+from controller.user import UserController
+
+from database import get_session
+
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+)
+
+@router.delete("/{id}")
+async def delete_task(id: int, session: Session = Depends(get_session)):
+    return await UserController.delete_user(session, id)
