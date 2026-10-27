@@ -2,7 +2,7 @@
 
 from sqlmodel import SQLModel
 
-from app.models.enums import TenantStatus
+from models.enums import TenantStatus
 
 
 class TenantCreate(SQLModel):
