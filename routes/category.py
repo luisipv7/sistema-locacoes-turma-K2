@@ -10,9 +10,9 @@ router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 @router.post("/")
-async def create_task(categoria: CategoryCreate, session: Session = Depends(get_session)) -> Category:
+async def create_category(categoria: CategoryCreate, session: Session = Depends(get_session)) -> Category:
     return await  CategoryController.create_category(session, categoria)
 
 @router.delete("/{id}")
-async def delete_task(id: int, session: Session = Depends(get_session)):
+async def delete_category(id: int, session: Session = Depends(get_session)):
     return await CategoryController.delete_category(session, id)

@@ -1,6 +1,6 @@
 from models.category import Category
 from schemas.category import CategoryCreate
-from sqlmodel import Session
+from sqlmodel import Session, select
 from models.item import Item
 
 class ItemService:

@@ -4,4 +4,4 @@ from routes.category import router as category
 from routes.user import router as user
 from routes.item import router as item
 
-__all__ = ["auth_router", "category", "user", "item"]
+__all__ = ["auth_router", "category", "user", "health_check", "item"]

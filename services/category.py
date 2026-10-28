@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 from models.category import Category
 from schemas.category import CategoryCreate
 from sqlmodel import Session
