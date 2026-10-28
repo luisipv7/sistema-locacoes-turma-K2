@@ -24,8 +24,11 @@ class UserService:
 
         user_data = user.model_dump(mode="json", exclude_unset=True)
 
+        ## Isto foi feito para verioficar se o usuario envio o campo de senha
         password = user_data.pop("password", None)
+        ## Aqui ele valida se exite realmente algum dado
         if password:
+            ## Aqui ele criptografa a senha exemplo você enviou: 123 aqui ele passa esse 123 para "pbkdf2_sha256$......"
             user_data["hashed_password"] = get_password_hash(password)
 
         for field, value in user_data.items():
