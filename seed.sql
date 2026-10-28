@@ -41,14 +41,14 @@ INSERT INTO tenants (name, slug, domain, logo_url, currency, timezone, language,
                      min_rental_hours, max_rental_days, advance_booking_days, status,
                      created_at, updated_at)
 VALUES ('Festa & Cia Locações', 'festa-e-cia', 'festaecia.com.br', NULL, 'BRL', 'America/Sao_Paulo', 'pt-BR',
-        4, 7, 60, 'ACTIVE', NOW(), NOW());
+        4, 7, 7, 'ACTIVE', NOW(), NOW());
 SET @tenant_festa = LAST_INSERT_ID();
 
 INSERT INTO tenants (name, slug, domain, logo_url, currency, timezone, language,
                      min_rental_hours, max_rental_days, advance_booking_days, status,
                      created_at, updated_at)
 VALUES ('Ferramentas Já', 'ferramentas-ja', 'ferramentasja.com.br', NULL, 'BRL', 'America/Sao_Paulo', 'pt-BR',
-        2, 30, 90, 'ACTIVE', NOW(), NOW());
+        2, 30, 2, 'ACTIVE', NOW(), NOW());
 SET @tenant_ferr = LAST_INSERT_ID();
 
 -- =========================================================
