@@ -18,3 +18,6 @@ async def delete_user(id: int, session: Session = Depends(get_session)):
 async def update_user(id: int, user: UserUpdate, session: Session = Depends(get_session)):
     return await UserController.update_user(session, id, user)
 
+@router.get("/{id}")
+async def get_by_id(id: int, session: Session = Depends(get_session)):
+    return await UserController.get_by_id(session, id)

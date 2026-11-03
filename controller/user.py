@@ -11,4 +11,6 @@ class UserController:
 
     async def update_user(session: Session, id: int, user: UserUpdate):
         return await UserService.update_user(session, id, user)
-    
+
+    async def get_by_id(session: Session, id: int):
+        return await UserService.get_by_id(session, id)

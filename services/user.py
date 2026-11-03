@@ -38,4 +38,10 @@ class UserService:
         session.commit()
         session.refresh(db_user)
         return {"message": "Usuário atualizado com sucesso "}
-    
+
+    async def get_by_id(session: Session, id: int):
+        user = session.get(User, id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="user not found")
+        return user 
+        
