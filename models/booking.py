@@ -11,7 +11,7 @@ from models.base import TimestampMixin
 from models.enums import BookingStatus
 
 if TYPE_CHECKING:
-    from models.item import Item
+    from models.item import Category
     from models.tenant import Tenant
     from models.user import User
 
@@ -42,5 +42,5 @@ class Booking(TimestampMixin, SQLModel, table=True):
     notes: str | None = Field(default=None, max_length=500)
 
     tenant: "Tenant" = Relationship(back_populates="bookings")
-    item: "Item" = Relationship(back_populates="bookings")
+    item: "Category" = Relationship(back_populates="bookings")
     user: "User" = Relationship(back_populates="bookings")
