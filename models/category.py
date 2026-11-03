@@ -8,11 +8,11 @@ from sqlmodel import Field, Relationship, SQLModel
 from models.base import TimestampMixin
 
 if TYPE_CHECKING:
-    from models.item import Item
+    from models.item import Category
     from models.tenant import Tenant
 
 
-class Item(TimestampMixin, SQLModel, table=True):
+class Category(TimestampMixin, SQLModel, table=True):
     __tablename__ = "categories"
 
     __table_args__ = (
@@ -30,4 +30,4 @@ class Item(TimestampMixin, SQLModel, table=True):
     parent_id: int | None = Field(default=None, foreign_key="categories.id", index=True)
 
     tenant: "Tenant" = Relationship(back_populates="categories")
-    items: list["Item"] = Relationship(back_populates="category")
+    items: list["Category"] = Relationship(back_populates="category")
