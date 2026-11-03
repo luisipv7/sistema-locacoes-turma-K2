@@ -3,7 +3,10 @@ from models.item import Item
 
 from sqlmodel import Session
 from database import get_session
-class CategoryController:
+class ItemController:
 
     async def get_all_items(session: Session, skip: int = 0, limit: int | None = None) -> Item:
         return await ItemService.get_all_items(session, skip, limit)
+
+    async def delete_by_id(session: Session, id: int):
+        return await ItemService.delete_by_id(session, id)
