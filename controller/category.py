@@ -14,5 +14,5 @@ class CategoryController:
         return await CategoryService.delete_category(session, id)
 
     async def get_all(session: Session, skip: int = 0, limit: int | None = None) -> Item:
-            return await CategoryService.get_all(session, skip, limit)
+        return await CategoryService.get_all(session, skip, limit)
     
