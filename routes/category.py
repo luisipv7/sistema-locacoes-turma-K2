@@ -3,14 +3,14 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session
 from database import get_session
 from schemas.category import CategoryCreate
-from models.category import Category
+from models.category import Item
 from controller.category import CategoryController
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
 @router.post("/")
-async def create_category(categoria: CategoryCreate, session: Session = Depends(get_session)) -> Category:
+async def create_category(categoria: CategoryCreate, session: Session = Depends(get_session)) -> Item:
     return await  CategoryController.create_category(session, categoria)
 
 @router.delete("/{id}")
