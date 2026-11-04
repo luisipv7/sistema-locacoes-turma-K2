@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from models.tenant import Tenant
 
 
-class Category(TimestampMixin, SQLModel, table=True):
+class Item(TimestampMixin, SQLModel, table=True):
     __tablename__ = "categories"
 
     __table_args__ = (

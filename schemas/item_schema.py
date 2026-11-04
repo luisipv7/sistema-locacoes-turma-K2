@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlmodel import SQLModel
 
-from app.models.enums import ItemStatus
+from models.enums import ItemStatus
 
 
 class ItemCreate(SQLModel):
