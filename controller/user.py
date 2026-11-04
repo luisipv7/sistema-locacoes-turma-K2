@@ -14,3 +14,7 @@ class UserController:
 
     async def get_by_id(session: Session, id: int):
         return await UserService.get_by_id(session, id)
+
+    async def get_all(session: Session, skip: int = 0, limit: int | None = None):
+        return await UserService.get_all(session, skip, limit)
+        

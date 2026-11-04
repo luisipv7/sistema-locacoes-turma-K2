@@ -44,4 +44,17 @@ class UserService:
         if user is None:
             raise HTTPException(status_code=404, detail="user not found")
         return user 
+
+    async def get_all(
+        session: Session,
+        skip: int = 0,
+        limit: int | None = None,
+    ):
+        statement = select(User)
+
+        statement = statement.offset(skip)
+        if limit is not None:
+            statement = statement.limit(limit)
+
+        return session.exec(statement).all()
         
