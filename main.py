@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from database import create_db_and_tables
-from routes import auth_router, health_check, category,user, item
+from routes import auth_router, health_check, category,user, item, tenant
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Template INFO8B API")
@@ -25,3 +25,4 @@ app.include_router(health_check)
 app.include_router(category)
 app.include_router(user)
 app.include_router(item)
+app.include_router(tenant)
