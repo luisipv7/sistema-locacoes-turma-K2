@@ -1,0 +1,17 @@
+from sqlmodel import Session
+from models.tenant import Tenant, TenantStatus
+from fastapi import HTTPException
+
+async def get_tenant_service(session: Session, tenant_id: int):
+    tenant = session.get(Tenant, tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado")
+    return tenant
+
+async def delete_tenant_service(session: Session, tenant_id: int):
+    tenant = await get_tenant_service(session, tenant_id)
+    tenant.status = TenantStatus.INACTIVE
+    session.add(tenant)
+    session.commit()
+    session.refresh(tenant)
+    return tenant
