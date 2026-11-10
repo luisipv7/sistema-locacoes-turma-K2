@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 from database import get_session
-from schemas.tenant_schema import TenantRead
-from controller.tenant import delete_tenant
+from schemas.tenant_schema import TenantRead, TenantUpdate
+from controller.tenant import delete_tenant, update_tenant
 # from security import AdminUser 
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
@@ -14,3 +14,7 @@ async def delete_tenant_route(
     session: Session = Depends(get_session)
 ):
     return await delete_tenant(session, current_user, tenant_id)
+
+@router.put("/{id}")
+async def update_tenant(id: int, tenant: TenantUpdate, session: Session = Depends(get_session)):
+    return await update_tenant(session, id, tenant)
