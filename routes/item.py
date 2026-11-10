@@ -1,6 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from schemas.item_schema import ItemUpdate
+from models.item import Item
+from schemas.item_schema import ItemCreate, ItemUpdate
 from sqlmodel import Session
 from database import get_session
 from controller.item import ItemController
@@ -21,3 +22,7 @@ async def delete_by_id(id: int, session: Session = Depends(get_session)):
 @router.put("/{id}")
 async def update(id: int, user: ItemUpdate, session: Session = Depends(get_session)):
     return await ItemController.update(session, id, user)
+
+@router.post("/")
+async def create(item: ItemCreate, session: Session = Depends(get_session)) -> Item:
+    return await  ItemController.create(session, item)
