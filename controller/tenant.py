@@ -12,3 +12,6 @@ async def update_user(session: Session, id: int, tenant: TenantUpdate):
 
 async def create(session: Session, tenant: TenantCreate) -> Tenant:
         return await create(session, tenant)
+
+async def get_all(session: Session, skip: int = 0, limit: int | None = None) -> Item:
+        return await get_all(session, skip, limit)

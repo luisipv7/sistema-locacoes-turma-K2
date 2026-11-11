@@ -22,3 +22,7 @@ async def update_tenant(id: int, tenant: TenantUpdate, session: Session = Depend
 @router.post("/")
 async def create(tenant: TenantCreate, session: Session = Depends(get_session)) -> Tenant:
     return await  create(session, tenant)
+
+@router.get("/")
+async def get_all(session: Session = Depends(get_session), skip: int = 0, limit: int | None = None):
+    return await get_all(session, skip, limit)

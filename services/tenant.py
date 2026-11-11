@@ -1,4 +1,4 @@
-from sqlmodel import Session
+from sqlmodel import Session, select
 from models.tenant import Tenant, TenantStatus
 from fastapi import HTTPException
 
@@ -39,3 +39,16 @@ async def create(session: Session, tenant: TenantCreate) -> Tenant:
         session.commit()
         session.refresh(new_tenant)
         return new_tenant
+
+async def get_all(
+            session: Session,
+            skip: int = 0,
+            limit: int | None = None,
+        ):
+            statement = select(Tenant)
+    
+            statement = statement.offset(skip)
+            if limit is not None:
+                statement = statement.limit(limit)
+    
+            return session.exec(statement).all()
