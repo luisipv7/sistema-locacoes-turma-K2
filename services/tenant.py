@@ -2,7 +2,7 @@ from sqlmodel import Session
 from models.tenant import Tenant, TenantStatus
 from fastapi import HTTPException
 
-from schemas.tenant_schema import TenantUpdate
+from schemas.tenant_schema import TenantCreate, TenantUpdate
 
 async def get_tenant_service(session: Session, tenant_id: int):
     tenant = session.get(Tenant, tenant_id)
@@ -32,3 +32,10 @@ async def update_tenant(session: Session, id: int, tenant: TenantUpdate):
         session.commit()
         session.refresh(db_tenant)
         return {"message": "Usuário atualizado com sucesso "}
+
+async def create(session: Session, tenant: TenantCreate) -> Tenant:
+        new_tenant = Tenant(**tenant.model_dump(mode="json"))
+        session.add(new_tenant)
+        session.commit()
+        session.refresh(new_tenant)
+        return new_tenant

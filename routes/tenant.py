@@ -18,3 +18,7 @@ async def delete_tenant_route(
 @router.put("/{id}")
 async def update_tenant(id: int, tenant: TenantUpdate, session: Session = Depends(get_session)):
     return await update_tenant(session, id, tenant)
+
+@router.post("/")
+async def create(tenant: TenantCreate, session: Session = Depends(get_session)) -> Tenant:
+    return await  create(session, tenant)
