@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlmodel import Session, select
-from schemas.user import UserUpdate
+from schemas.user import UserCreate, UserUpdate
 
 from models.user import User
 from security import get_password_hash
@@ -57,4 +57,10 @@ class UserService:
             statement = statement.limit(limit)
 
         return session.exec(statement).all()
-        
+
+    async def create(session: Session, user: UserCreate) -> User:
+        new_user = User(**user.model_dump(mode="json"))
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return new_user
