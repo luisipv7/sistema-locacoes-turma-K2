@@ -1,9 +1,23 @@
 from fastapi import HTTPException
 from sqlmodel import Session, select
+from models.tenant import Tenant
 from schemas.user import UserCreate, UserUpdate
 
 from models.user import User
 from security import get_password_hash
+
+def _check_username_available(
+    session: Session, username: str, ignore_id: int | None = None
+) -> None:
+    statement = select(User).where(User.username == username)
+    if ignore_id is not None:
+        statement = statement.where(User.id != ignore_id)
+    if session.exec(statement).first():
+        raise HTTPException(
+            status_code=409,
+            detail="Ja existe um usuario com esse username",
+        )
+
 
 class UserService:
 
@@ -12,9 +26,11 @@ class UserService:
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        session.delete(user)
+        user.is_active = False
+        session.add(user)
         session.commit()
-        return {"message": "Usuário deletado com sucesso "}
+        session.refresh(user)
+        return user
 
     
     async def update_user(session: Session, id: int, user: UserUpdate):
@@ -59,6 +75,9 @@ class UserService:
         return session.exec(statement).all()
 
     async def create(session: Session, user: UserCreate) -> User:
+        if not session.get(Tenant, user.tenant_id):
+            raise HTTPException(status_code=404, detail="Tenant nao encontrado")
+        _check_username_available(session, user.username)
         new_user = User(**user.model_dump(mode="json"))
         session.add(new_user)
         session.commit()

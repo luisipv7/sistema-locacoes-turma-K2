@@ -1696,20 +1696,34 @@ Até aqui **qualquer pessoa, mesmo sem login, faz tudo**. Agora vamos travar as 
 
 | Papel     | Quem é                         | Alcance                                              |
 |-----------|--------------------------------|------------------------------------------------------|
-| `admin`   | Administrador da plataforma    | **Global**: age em qualquer tenant (não tem `tenant_id`) |
+| `admin`   | Administrador da plataforma    | **Global**: faz tudo, em qualquer tenant (não tem `tenant_id`) |
 | `locador` | Backoffice da locadora         | **Só o próprio tenant** (`current_user.tenant_id`)   |
-| `cliente` | Quem aluga                     | **Só os próprios itens locados**                     |
+| `cliente` | Quem aluga                     | **Só as próprias locações**, no próprio tenant       |
+
+As regras em uma frase cada:
+
+- **Tenants e usuários:** só o `admin` cria (e também edita e desativa).
+- **Categorias e itens:** só `admin` e `locador` criam, editam e apagam.
+- **Locação:** `admin`, `locador` e `cliente` podem criar. O cliente só cria **para ele mesmo**.
+- **Cliente:** a única coisa que ele faz é locação: criar a dele e ver as dele. Para escolher o que alugar, ele pode **consultar** (só ler) os itens e as categorias do tenant dele.
 
 | Ação                                                       | admin | locador              | cliente               |
 |------------------------------------------------------------|:-----:|:--------------------:|:---------------------:|
 | Criar, listar, editar e desativar **tenants**              | ✅    | ❌                    | ❌                     |
 | Criar, editar e desativar **usuários**                     | ✅ (só `locador` e `cliente`) | ❌      | ❌                     |
 | Listar e ver **usuários** (para escolher o cliente da locação) | ✅ | só do tenant dele | ❌                     |
-| CRUD de **categorias** e **itens**                         | ✅    | só do tenant dele    | ❌                     |
-| Criar e gerenciar **agendamentos** (confirmar, cancelar...)| ✅    | só do tenant dele    | ❌                     |
+| Criar, editar e apagar **categorias** e **itens**          | ✅    | só do tenant dele    | ❌                     |
+| Listar e ver **categorias** e **itens**                    | ✅    | só do tenant dele    | só do tenant dele     |
+| **Criar locação** e consultar disponibilidade              | ✅    | só do tenant dele, para qualquer cliente dele | ✅ **só para ele mesmo** |
+| Listar e gerenciar **locações** (editar, confirmar, cancelar, concluir) | ✅ | só do tenant dele | ❌        |
 | Ver **o que alugou**, com data de retirada e devolução     | —     | —                    | ✅ **só as dele** (`GET /bookings/me`) |
 
-Na prática: quem registra a locação é o locador, escolhendo no corpo da requisição o cliente (`user_id`). O cliente entra no sistema **só para consultar** o que alugou e quando deve retirar e devolver.
+Na prática, a locação nasce de dois jeitos:
+
+- O **locador** registra no balcão, escolhendo no corpo da requisição o cliente (`user_id`).
+- O **próprio cliente** faz a reserva. Aí o `user_id` do corpo tem que ser o dele, senão é `403`.
+
+Nos dois casos a locação nasce `pending`, e quem confirma, cancela e conclui é o locador (ou o admin).
 
 Como as rotas passam a exigir login, **toda requisição precisa do token**. No `/docs`, clique em **Authorize** e entre com usuário e senha.
 
@@ -1756,7 +1770,7 @@ ClienteUser = Annotated[User, Depends(require_roles(UserRole.CLIENTE))]
 
 
 def check_tenant_access(user: User, tenant_id: int) -> None:
-    """Admin acessa qualquer tenant; o locador, so o proprio."""
+    """Admin acessa qualquer tenant; locador e cliente, so o proprio."""
     if user.role == UserRole.ADMIN:
         return
     if user.tenant_id != tenant_id:
@@ -1767,7 +1781,7 @@ def check_tenant_access(user: User, tenant_id: int) -> None:
 
 
 def resolve_tenant_id(user: User, tenant_id: int | None) -> int:
-    """Descobre de qual tenant listar. Locador: o dele. Admin: precisa informar."""
+    """Descobre de qual tenant listar. Locador e cliente: o dele. Admin: precisa informar."""
     if user.role == UserRole.ADMIN:
         if tenant_id is None:
             raise HTTPException(
@@ -1788,7 +1802,7 @@ def resolve_tenant_id(user: User, tenant_id: int | None) -> int:
 
 O FastAPI resolve a dependência **antes** de entrar na função: se o papel não bate, a resposta é `403` e o service nem é chamado. Sem token, a resposta é `401`.
 
-Além do papel, o **locador só mexe no próprio tenant**. Por isso, depois de saber de qual tenant é o registro, chamamos `check_tenant_access`. São sempre três situações:
+Além do papel, **locador e cliente só mexem no próprio tenant**. Por isso, depois de saber de qual tenant é o registro, chamamos `check_tenant_access`. Repare que ele não olha o papel, só o tenant (e libera o admin): por isso a mesma função serve para o locador e para o cliente. São sempre três situações:
 
 | Situação                    | De onde vem o tenant          | O que fazer                                          |
 |-----------------------------|-------------------------------|------------------------------------------------------|
@@ -1796,13 +1810,13 @@ Além do papel, o **locador só mexe no próprio tenant**. Por isso, depois de s
 | **Ver, editar, apagar por id** | do registro no banco       | busca o registro → `check_tenant_access(current_user, registro.tenant_id)` |
 | **Listar**                  | da query (`?tenant_id=`)      | `tenant_id = resolve_tenant_id(current_user, tenant_id)` |
 
-Na listagem, o `tenant_id` da query passa a ser **opcional** (`int | None = None`): o locador nem precisa mandar, o sistema usa o dele. O admin precisa informar.
+Na listagem, o `tenant_id` da query passa a ser **opcional** (`int | None = None`): locador e cliente nem precisam mandar, o sistema usa o deles. O admin precisa informar.
 
 ### Passo 2 — Categoria (exemplo completo, antes → depois)
 
 As checagens ficam no **controller**: ele recebe o `current_user` da rota, confere e só então chama o service. O service não muda nada.
 
-**`routes/category.py`** — cada rota ganha `current_user: StaffUser` e o repassa:
+**`routes/category.py`**: as rotas que **alteram** (`POST`, `PATCH`, `DELETE`) ganham `current_user: StaffUser`. As que só **leem** (os dois `GET`) ganham `current_user: CurrentUser`, porque o cliente também precisa ver as categorias para escolher o que alugar. Todas repassam o usuário para o controller:
 
 ```python
 from fastapi import APIRouter, Depends, status
@@ -1815,7 +1829,7 @@ from controller.category import (
     list_categories,
     update_category,
 )
-from controller.permissions import StaffUser
+from controller.permissions import CurrentUser, StaffUser
 from database import get_session
 from schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 
@@ -1831,14 +1845,14 @@ async def create_category_route(
 
 @router.get("/", response_model=list[CategoryRead])
 async def list_categories_route(
-    current_user: StaffUser, tenant_id: int | None = None, session: Session = Depends(get_session)
+    current_user: CurrentUser, tenant_id: int | None = None, session: Session = Depends(get_session)
 ):
     return await list_categories(session, current_user, tenant_id)
 
 
 @router.get("/{category_id}", response_model=CategoryRead)
 async def get_category_route(
-    category_id: int, current_user: StaffUser, session: Session = Depends(get_session)
+    category_id: int, current_user: CurrentUser, session: Session = Depends(get_session)
 ):
     return await get_category(session, current_user, category_id)
 
@@ -1908,11 +1922,13 @@ async def delete_category(session: Session, current_user: User, category_id: int
 
 Repare no truque: `update` e `delete` chamam o `get_category` do próprio controller, que já busca **e** confere o tenant. Assim a checagem fica escrita uma vez só.
 
+O controller não precisa saber se quem chamou é locador ou cliente. Quem barra o cliente no `POST`, `PATCH` e `DELETE` é o `StaffUser` da rota. Nos `GET`, o `resolve_tenant_id` e o `check_tenant_access` prendem o cliente no tenant dele, do mesmo jeito que fazem com o locador.
+
 ### Passo 3 — Item
 
 **Exatamente igual à categoria.** Troque `Category` por `Item` e faça:
 
-- Todas as rotas com `current_user: StaffUser`.
+- `POST`, `PATCH` e `DELETE` com `current_user: StaffUser`; os dois `GET` com `current_user: CurrentUser` (o cliente consulta os itens para escolher o que alugar).
 - `create_item` → `check_tenant_access(current_user, item.tenant_id)`.
 - `list_items` → `tenant_id: int | None = None` na rota e `resolve_tenant_id` no controller (o filtro `category_id` continua igual).
 - `get_item` → busca e confere `item.tenant_id`; `update_item` e `delete_item` chamam o `get_item` do controller antes do service.
@@ -2007,13 +2023,13 @@ Nas rotas: `POST`, `PATCH` e `DELETE` com `current_user: AdminUser`; os dois `GE
 
 > **Cuidado com o admin no `check_tenant_access` do `get_user`:** o admin tem `tenant_id = None`. Como `check_tenant_access` libera o admin logo na primeira linha, o locador nunca consegue ver o admin (o `tenant_id` dele não bate), e o admin vê todo mundo. É o comportamento certo.
 
-### Passo 6 — Booking (locador gerencia; cliente só consulta)
+### Passo 6 — Booking (todos criam; locador gerencia; cliente só mexe nas dele)
 
 | Método | Rota                          | Quem pode                    |
 |--------|-------------------------------|------------------------------|
-| POST   | `/bookings/`                  | `StaffUser` + `check_tenant_access(data.tenant_id)` |
+| **POST** | **`/bookings/`**            | **`CurrentUser`** (os três papéis) + `check_tenant_access(data.tenant_id)`; o cliente só com o `user_id` dele |
 | GET    | `/bookings/`                  | `StaffUser` + `resolve_tenant_id` |
-| GET    | `/bookings/availability`      | `StaffUser` + tenant do item |
+| **GET** | **`/bookings/availability`** | **`CurrentUser`** + tenant do item (o cliente confere se está livre antes de reservar) |
 | GET    | `/bookings/{id}`              | `StaffUser` + tenant da locação |
 | PATCH  | `/bookings/{id}`              | `StaffUser` + tenant da locação |
 | POST   | `/bookings/{id}/confirm`, `/cancel`, `/complete` | `StaffUser` + tenant da locação |
@@ -2023,13 +2039,22 @@ O controller segue as mesmas três situações:
 
 ```python
 # controller/booking.py  (trechos que mudam)
+from fastapi import HTTPException, status
+
 from controller.permissions import check_tenant_access, resolve_tenant_id
+from models.enums import BookingStatus, UserRole
 from models.user import User
 from services.item import get_item_service
 
 
 async def create_booking(session: Session, current_user: User, booking: BookingCreate) -> Booking:
     check_tenant_access(current_user, booking.tenant_id)
+    # o cliente so pode alugar para ele mesmo
+    if current_user.role == UserRole.CLIENTE and booking.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="O cliente so pode criar locacao para ele mesmo",
+        )
     return await create_booking_service(session, booking)
 
 
@@ -2074,11 +2099,32 @@ async def confirm_booking(session: Session, current_user: User, booking_id: int)
 # cancel_booking e complete_booking: igual ao confirm, so muda o status
 ```
 
-E nas rotas, todas com `current_user: StaffUser` repassando o usuário para o controller.
+Nas rotas, todas repassam o usuário para o controller. O `POST /bookings/` e o `GET /bookings/availability` usam `current_user: CurrentUser`; as demais usam `current_user: StaffUser`:
+
+```python
+from controller.permissions import CurrentUser, StaffUser
+
+
+@router.post("/", response_model=BookingRead, status_code=status.HTTP_201_CREATED)
+async def create_booking_route(
+    booking: BookingCreate, current_user: CurrentUser, session: Session = Depends(get_session)
+):
+    return await create_booking(session, current_user, booking)
+```
+
+**Por que `CurrentUser` no `POST`, e não uma lista de papéis?** Porque os três papéis podem criar locação. O que muda entre eles é o **alcance**, e isso o controller resolve em duas linhas:
+
+| Quem cria | `check_tenant_access`       | `if` do cliente                   | Resultado                                  |
+|-----------|-----------------------------|-----------------------------------|--------------------------------------------|
+| admin     | libera qualquer tenant      | não se aplica                     | cria para qualquer pessoa, em qualquer tenant |
+| locador   | só o tenant dele            | não se aplica                     | cria para qualquer cliente do tenant dele  |
+| cliente   | só o tenant dele            | `user_id` tem que ser o dele      | cria só para ele mesmo                     |
+
+O resto continua igual: o service ainda confere que o usuário é do mesmo tenant e está ativo, que o item está livre e calcula o valor (regras da Parte 5). A locação do cliente nasce `pending`, como qualquer outra, e espera o locador confirmar.
 
 #### O endpoint do cliente: `GET /bookings/me`
 
-O cliente não usa as rotas acima (todas dão `403` para ele). Ele tem uma rota só dele, que mostra **o item que alugou, a data de retirada e a data de devolução**.
+Das rotas acima, o cliente só usa o `POST /bookings/` e o `GET /bookings/availability`. As outras dão `403` para ele, porque listariam ou mexeriam em locações de outras pessoas. Para ver **as dele**, ele tem uma rota própria, que mostra **o item que alugou, a data de retirada e a data de devolução**.
 
 **1. Schema** — acrescente em `schemas/booking.py`:
 
@@ -2209,13 +2255,20 @@ Depois, como **`dono`**, crie categoria, item e uma locação para a Joana (Part
 
 **Como cliente (`joana`)**
 
-| Teste                                   | Esperado |
-|-----------------------------------------|----------|
-| `GET /bookings/me`                      | `200`, só as locações da Joana, com item, retirada e devolução |
-| `GET /bookings/`                        | `403`    |
-| `GET /bookings/1`                       | `403`    |
-| `POST /bookings/`                       | `403`    |
-| `GET /items/` ou `GET /categories/`     | `403`    |
+| Teste                                                        | Esperado |
+|--------------------------------------------------------------|----------|
+| `GET /items/` ou `GET /categories/` (sem `tenant_id`)        | `200`, só os do tenant 1 |
+| `GET /items/?tenant_id=2`                                    | `403`    |
+| `POST /items/`, `PATCH /items/1` ou `POST /categories/`      | `403`    |
+| `GET /bookings/availability?item_id=1&start_at=...&end_at=...` | `200`  |
+| `POST /bookings/` com `"user_id": 3` (ela mesma), num horário livre | `201`, `status: "pending"` |
+| `POST /bookings/` com `"user_id": 2` (outra pessoa)          | `403`    |
+| `POST /bookings/` com `"tenant_id": 2`                       | `403`    |
+| `GET /bookings/me`                                           | `200`, só as locações da Joana (inclusive a que ela acabou de criar), com item, retirada e devolução |
+| `GET /bookings/`                                             | `403`    |
+| `GET /bookings/1`                                            | `403`    |
+| `POST /bookings/1/confirm` ou `/cancel`                      | `403`    |
+| `POST /tenants/` ou `POST /users/`                           | `403`    |
 
 **Sem login**
 

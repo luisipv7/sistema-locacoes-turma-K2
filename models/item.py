@@ -10,7 +10,7 @@ from models.enums import ItemStatus
 
 if TYPE_CHECKING:
     from models.booking import Booking
-    from models.category import Item
+    from models.category import Category
     from models.tenant import Tenant
     from models.user import User
 
@@ -47,6 +47,6 @@ class Item(TimestampMixin, SQLModel, table=True):
     is_active: bool = Field(default=True)
 
     tenant: "Tenant" = Relationship(back_populates="items")
-    category: "Item" = Relationship(back_populates="items")
+    category: "Category" = Relationship(back_populates="items")
     owner: "User" = Relationship(back_populates="items")
     bookings: list["Booking"] = Relationship(back_populates="item")
