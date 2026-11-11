@@ -25,3 +25,7 @@ async def get_by_id(id: int, session: Session = Depends(get_session)):
 @router.get("/")
 async def get_all(session: Session = Depends(get_session), skip: int = 0, limit: int | None = None):
     return await UserController.get_all(session, skip, limit)
+    
+@router.post("/")
+async def create(user: UserCreate, session: Session = Depends(get_session)) -> User:
+    return await  UserController.create(session, user)

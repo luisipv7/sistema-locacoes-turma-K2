@@ -1,5 +1,7 @@
+from models.user import User
+from schemas.item_schema import ItemCreate
 from services.user import UserService
-from schemas.user import UserUpdate
+from schemas.user import UserCreate, UserUpdate
 
 from sqlmodel import Session
 from database import get_session
@@ -17,4 +19,7 @@ class UserController:
 
     async def get_all(session: Session, skip: int = 0, limit: int | None = None):
         return await UserService.get_all(session, skip, limit)
+
+    async def create(session: Session, user: UserCreate) -> User:
+        return await UserService.create(session, user)
         
