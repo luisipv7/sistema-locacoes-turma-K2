@@ -5,3 +5,4 @@ sqlmodel
 pyjwt           
 python-multipart 
 PyMySQL
+pymongo
