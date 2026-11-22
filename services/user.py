@@ -78,7 +78,10 @@ class UserService:
         if not session.get(Tenant, user.tenant_id):
             raise HTTPException(status_code=404, detail="Tenant nao encontrado")
         _check_username_available(session, user.username)
-        new_user = User(**user.model_dump(mode="json"))
+        user_data = user.model_dump(mode="json")
+        password = user_data.pop("password")
+        user_data["hashed_password"] = get_password_hash(password)
+        new_user = User(**user_data)
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
