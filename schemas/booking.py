@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlmodel import SQLModel
+from sqlmodel import Field, SQLModel
 
 from models.enums import BookingStatus
 
@@ -14,7 +14,7 @@ class BookingCreate(SQLModel):
     user_id: int
     start_at: datetime
     end_at: datetime
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=500)
 
 
 class BookingRead(SQLModel):
@@ -34,4 +34,11 @@ class BookingUpdate(SQLModel):
     end_at: datetime | None = None
     status: BookingStatus | None = None
     total_amount: Decimal | None = None
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class AvailabilityRead(SQLModel):
+    item_id: int
+    start_at: datetime
+    end_at: datetime
+    available: bool
