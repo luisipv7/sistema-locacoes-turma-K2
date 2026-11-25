@@ -42,6 +42,17 @@ obj/
 .codex/
 .docker/
 
+/guia
+guia/
+.guia/
+guia/*
+
+
+/case-linkedin
+case-linkedin/
+.case-linkedin/
+case-linkedin/*
+
 # Python
 __pycache__/
 *.py[cod]
@@ -95,3 +106,7 @@ target/
 *.tmp
 *.swp
 *~
+
+# Video do case para LinkedIn (node_modules e saidas)
+case-linkedin/node_modules/
+case-linkedin/out/

@@ -11,9 +11,9 @@ from models.enums import BookingStatus
 class BookingCreate(SQLModel):
     tenant_id: int
     item_id: int
-    user_id: int
-    start_at: datetime
-    end_at: datetime
+    user_id: int          # o cliente que esta alugando
+    start_at: datetime    # retirada
+    end_at: datetime      # devolucao
     notes: str | None = Field(default=None, max_length=500)
 
 
@@ -32,8 +32,6 @@ class BookingRead(SQLModel):
 class BookingUpdate(SQLModel):
     start_at: datetime | None = None
     end_at: datetime | None = None
-    status: BookingStatus | None = None
-    total_amount: Decimal | None = None
     notes: str | None = Field(default=None, max_length=500)
 
 
@@ -42,3 +40,15 @@ class AvailabilityRead(SQLModel):
     start_at: datetime
     end_at: datetime
     available: bool
+
+
+class MyRentalRead(SQLModel):
+    """Visao do cliente: o que ele alugou, com data de retirada e devolucao."""
+    booking_id: int
+    item_id: int
+    item_name: str
+    item_image_url: str | None
+    data_retirada: datetime     # start_at
+    data_devolucao: datetime    # end_at
+    status: BookingStatus
+    total_amount: Decimal | None

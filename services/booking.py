@@ -12,8 +12,10 @@ from models.tenant import Tenant
 from models.user import User
 from schemas.booking import BookingCreate, BookingUpdate
 
+# locacoes nesses status ocupam o item
 ACTIVE_STATUSES = [BookingStatus.PENDING, BookingStatus.CONFIRMED]
 
+# para onde cada status pode ir
 ALLOWED_TRANSITIONS = {
     BookingStatus.PENDING: {BookingStatus.CONFIRMED, BookingStatus.CANCELLED},
     BookingStatus.CONFIRMED: {BookingStatus.COMPLETED, BookingStatus.CANCELLED},
@@ -26,7 +28,10 @@ def _error(code: int, message: str) -> HTTPException:
     return HTTPException(status_code=code, detail=message)
 
 
+# ---------- datas ----------
+
 def _to_utc(value: datetime) -> datetime:
+    """Deixa toda data em UTC. Data sem fuso e tratada como UTC."""
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
@@ -36,6 +41,8 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+# ---------- validacoes ----------
+
 def _get_active_tenant(session: Session, tenant_id: int) -> Tenant:
     tenant = session.get(Tenant, tenant_id)
     if not tenant or tenant.status != TenantStatus.ACTIVE:
@@ -44,6 +51,9 @@ def _get_active_tenant(session: Session, tenant_id: int) -> Tenant:
 
 
 def _get_bookable_item(session: Session, tenant_id: int, item_id: int) -> Item:
+    # with_for_update trava a linha do item ate o commit. Se duas pessoas tentarem
+    # reservar o mesmo item ao mesmo tempo, a segunda espera a primeira terminar
+    # e entao ve a reserva dela na checagem de conflito.
     statement = select(Item).where(Item.id == item_id).with_for_update()
     item = session.exec(statement).first()
     if not item or item.tenant_id != tenant_id:
@@ -115,6 +125,8 @@ def calculate_total(item: Item, start_at: datetime, end_at: datetime) -> Decimal
     return Decimal(total).quantize(Decimal("0.01"))
 
 
+# ---------- CRUD ----------
+
 async def get_booking_service(session: Session, booking_id: int) -> Booking:
     booking = session.get(Booking, booking_id)
     if not booking:
@@ -137,6 +149,15 @@ async def list_bookings_service(
     if booking_status is not None:
         statement = statement.where(Booking.status == booking_status)
     statement = statement.order_by(col(Booking.start_at))
+    return list(session.exec(statement).all())
+
+
+async def list_my_rentals_service(session: Session, user_id: int) -> list[Booking]:
+    statement = (
+        select(Booking)
+        .where(Booking.user_id == user_id)
+        .order_by(col(Booking.start_at).desc())
+    )
     return list(session.exec(statement).all())
 
 
@@ -165,7 +186,7 @@ async def create_booking_service(session: Session, data: BookingCreate) -> Booki
         start_at=start_at,
         end_at=end_at,
         notes=data.notes,
-        total_amount=calculate_total(item, start_at, end_at),
+        total_amount=calculate_total(item, start_at, end_at),  # calculado aqui, nunca recebido
     )
     session.add(booking)
     session.commit()
@@ -188,6 +209,7 @@ async def update_booking_service(session: Session, booking_id: int, data: Bookin
         item = _get_bookable_item(session, booking.tenant_id, booking.item_id)
         _validate_period(tenant, start_at, end_at)
 
+        # ignore_id: a propria locacao nao conta como conflito
         if _has_overlap(session, item.id, start_at, end_at, ignore_id=booking.id):
             raise _error(status.HTTP_409_CONFLICT, "O item ja esta reservado nesse periodo")
 

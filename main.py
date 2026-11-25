@@ -2,15 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import create_db_and_tables
-from routes import (
-    auth_router,
-    booking_router,
-    category_router,
-    health_router,
-    item_router,
-    tenant_router,
-    user_router,
-)
+from routes import auth_router, health_check, category,user, item, tenant, log, booking
+from fastapi.middleware.cors import CORSMiddleware
+from utils.logger import close_mongo, connect_mongo, log_requests
 
 app = FastAPI(title="Template INFO8B API")
 
@@ -30,8 +24,10 @@ def on_startup():
 
 app.include_router(health_router)
 app.include_router(auth_router)
-app.include_router(tenant_router)
-app.include_router(user_router)
-app.include_router(category_router)
-app.include_router(item_router)
-app.include_router(booking_router)
+app.include_router(health_check)
+app.include_router(category)
+app.include_router(user)
+app.include_router(item)
+app.include_router(tenant)
+app.include_router(log)
+app.include_router(booking)

@@ -1,9 +1,13 @@
 from fastapi import HTTPException, status
+from sqlmodel import Session, select
 
 from models.category import Category
+from models.item import Item
 from models.tenant import Tenant
-from schemas.category import CategoryCreate
-from sqlmodel import Session, select
+from schemas.category import CategoryCreate, CategoryUpdate
+
+
+# ---------- funcoes auxiliares ----------
 
 def _check_slug_available(
     session: Session, tenant_id: int, slug: str, ignore_id: int | None = None
@@ -28,12 +32,14 @@ def _check_parent(session: Session, tenant_id: int, parent_id: int) -> None:
             detail="Categoria pai nao encontrada",
         )
 
+
+# ---------- CRUD ----------
+
 class CategoryService:
 
     async def create_category(session: Session, categoria: CategoryCreate) -> Category:
-
         if not session.get(Tenant, categoria.tenant_id):
-            raise HTTPException(status_code=404, detail="Tenant nao encontrado")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant nao encontrado")
         _check_slug_available(session, categoria.tenant_id, categoria.slug)
         if categoria.parent_id is not None:
             _check_parent(session, categoria.tenant_id, categoria.parent_id)
@@ -44,25 +50,61 @@ class CategoryService:
         session.refresh(new_category)
         return new_category
 
+    async def get_all(
+        session: Session,
+        tenant_id: int,
+        skip: int = 0,
+        limit: int | None = None,
+    ) -> list[Category]:
+        statement = (
+            select(Category)
+            .where(Category.tenant_id == tenant_id)
+            .order_by(Category.name)
+            .offset(skip)
+        )
+        if limit is not None:
+            statement = statement.limit(limit)
+        return list(session.exec(statement).all())
 
-    async def delete_category(session: Session, id: int):
-        category = session.get(Category, id)
-        if category is None:
-            raise HTTPException(status_code=404, detail="Category not found")
+    async def get_category_service(session: Session, category_id: int) -> Category:
+        category = session.get(Category, category_id)
+        if not category:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria nao encontrada")
+        return category
+
+    async def update_category(session: Session, category_id: int, categoria: CategoryUpdate) -> Category:
+        category = await CategoryService.get_category_service(session, category_id)
+
+        # exclude_unset=True: pega SO os campos que vieram no corpo da requisicao
+        changes = categoria.model_dump(exclude_unset=True)
+
+        if "slug" in changes:
+            _check_slug_available(session, category.tenant_id, changes["slug"], ignore_id=category.id)
+        if changes.get("parent_id") is not None:
+            if changes["parent_id"] == category.id:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Uma categoria nao pode ser pai dela mesma",
+                )
+            _check_parent(session, category.tenant_id, changes["parent_id"])
+
+        category.sqlmodel_update(changes)
+        session.add(category)
+        session.commit()
+        session.refresh(category)
+        return category
+
+    async def delete_category(session: Session, category_id: int) -> None:
+        category = await CategoryService.get_category_service(session, category_id)
+
+        # nao deixa apagar categoria que ainda tem itens ou subcategorias
+        has_items = session.exec(select(Item).where(Item.category_id == category_id)).first()
+        has_children = session.exec(select(Category).where(Category.parent_id == category_id)).first()
+        if has_items or has_children:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Categoria em uso por itens ou subcategorias",
+            )
 
         session.delete(category)
         session.commit()
-        return {"message": "Category deleted successfully"}
-
-    async def get_all(
-            session: Session,
-            skip: int = 0,
-            limit: int | None = None,
-        ):
-            statement = select(Category)
-    
-            statement = statement.offset(skip)
-            if limit is not None:
-                statement = statement.limit(limit)
-    
-            return session.exec(statement).all()
