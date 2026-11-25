@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from database import create_db_and_tables
-from routes import auth_router, health_check, category,user, item, tenant, log
+from routes import auth_router, booking_router, health_check, category,user, item, tenant, log
 from fastapi.middleware.cors import CORSMiddleware
 from utils.logger import close_mongo, connect_mongo, log_requests
 
@@ -35,5 +35,6 @@ app.include_router(health_check)
 app.include_router(category)
 app.include_router(user)
 app.include_router(item)
+app.include_router(booking_router)
 app.include_router(tenant)
 app.include_router(log)
