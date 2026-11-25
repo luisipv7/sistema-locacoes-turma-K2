@@ -100,7 +100,7 @@ def _has_overlap(
         Booking.start_at < end_at,
         Booking.end_at > start_at,
     )
-    if ignore_id is not None:
+    if ignore_id is not None: 
         statement = statement.where(Booking.id != ignore_id)
     return session.exec(statement).first() is not None
 
