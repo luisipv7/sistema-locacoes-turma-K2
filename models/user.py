@@ -23,7 +23,8 @@ class User(TimestampMixin, SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
 
-    tenant_id: int = Field(foreign_key="tenants.id", index=True)
+    # o admin nao tem tenant (administra o sistema todo), por isso pode ser None
+    tenant_id: int | None = Field(default=None, foreign_key="tenants.id", index=True)
 
     username: str = Field(index=True, max_length=50)
     hashed_password: str = Field(max_length=255)
