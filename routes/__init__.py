@@ -5,5 +5,6 @@ from routes.user import router as user
 from routes.item import router as item
 from routes.tenant import router as tenant
 from routes.log import router as log
+from routes.booking import router as booking
 
-__all__ = ["auth_router", "category", "user", "health_check", "item", "tenant", "log"]
+__all__ = ["auth_router", "category", "user", "health_check", "item", "tenant", "log", "booking"]
