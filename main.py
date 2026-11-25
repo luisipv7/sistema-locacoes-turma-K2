@@ -1,9 +1,16 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from database import create_db_and_tables
-from routes import auth_router, health_check, category,user, item, tenant, log
-from fastapi.middleware.cors import CORSMiddleware
-from utils.logger import close_mongo, connect_mongo, log_requests
+from routes import (
+    auth_router,
+    booking_router,
+    category_router,
+    health_router,
+    item_router,
+    tenant_router,
+    user_router,
+)
 
 app = FastAPI(title="Template INFO8B API")
 
@@ -15,25 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# salva no Mongo todas as chamadas feitas em qualquer endpoint
-app.middleware("http")(log_requests)
-
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
-    connect_mongo()
 
 
-@app.on_event("shutdown")
-async def on_shutdown():
-    await close_mongo()
+    
 
 
+app.include_router(health_router)
 app.include_router(auth_router)
-app.include_router(health_check)
-app.include_router(category)
-app.include_router(user)
-app.include_router(item)
-app.include_router(tenant)
-app.include_router(log)
+app.include_router(tenant_router)
+app.include_router(user_router)
+app.include_router(category_router)   
+app.include_router(item_router)
+app.include_router(booking_router)
