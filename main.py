@@ -22,7 +22,6 @@ def on_startup():
     create_db_and_tables()
 
 
-app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(health_check)
 app.include_router(category)
